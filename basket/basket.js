@@ -1,11 +1,4 @@
-app.use(express.static('public', {
-  setHeaders: (res, path) => {
-    if (path.endsWith('.js')) {
-      res.setHeader('Content-Type', 'application/javascript');
-    }
-  }
-}));
-document.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', () => {
   let buybook = JSON.parse(localStorage.getItem('buybook')) || [];
   let mybooks = JSON.parse(localStorage.getItem('mybooks')) || [];
 
@@ -98,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
-  updateBasketStyles();
+
   // добавить обработчик событий для кнопки оплаты
   basketButton.addEventListener('click', () => {
     if (buybook.length === 0) {
@@ -106,58 +99,56 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-  updateBasketStyles();
+    // Диалог с распознаванием банковских реквизитов пользователя
+    let cardNumber = prompt('Введите номер вашей банковской карты:');
+    let expirationDate = prompt('Введите дату окончания срока действия вашей банковской карты (MM/YY):');
+    let cvv = prompt('Введите код CVV вашей банковской карты:');
+    if (cardNumber && expirationDate && cvv) {
+      // Проверка номера карты
+      if (!/^\d{16}$/.test(cardNumber)) {
+        alert('Зачем вы пытаетесь нас обмануть? Номер карты должен состоять из 16 цифр.');
+        return;
+      }
 
-  // Диалог с распознаванием банковских реквизитов пользователя
-  let cardNumber = prompt('Введите номер вашей банковской карты:');
-  let expirationDate = prompt('Введите дату окончания срока действия вашей банковской карты (MM/YY):');
-  let cvv = prompt('Введите код CVV вашей банковской карты:');
-  if (cardNumber && expirationDate && cvv) {
-    // Проверка номера карты
-    if (!/^\d{16}$/.test(cardNumber)) {
-      alert('Зачем вы пытаетесь нас обмануть? Номер карты должен состоять из 16 цифр.');
-      return;
-    }
+      // Проверка даты окончания срока действия
+      let expirationDateParts = expirationDate.split('/');
+      if (expirationDateParts.length!== 2) {
+        alert('Зачем вы пытаетесь нас обмануть? Дата окончания срока действия должна быть в формате MM/YY.');
+        return;
+      }
+      let month = parseInt(expirationDateParts[0], 10);
+      let year = parseInt(expirationDateParts[1], 10);
 
-    // Проверка даты окончания срока действия
-    let expirationDateParts = expirationDate.split('/');
-    if (expirationDateParts.length!== 2) {
-      alert('Зачем вы пытаетесь нас обмануть? Дата окончания срока действия должна быть в формате MM/YY.');
-      return;
-    }
-    let month = parseInt(expirationDateParts[0], 10);
-    let year = parseInt(expirationDateParts[1], 10);
+      // Проверка месяца
+      if (month < 1 || month > 12) {
+        alert('Зачем вы пытаетесь нас обмануть? Месяц должен быть от 1 до 12.');
+        return;
+      }
 
-    // Проверка месяца
-    if (month < 1 || month > 12) {
-      alert('Зачем вы пытаетесь нас обмануть? Месяц должен быть от 1 до 12.');
-      return;
-    }
+      // Проверка кода CVV
+      if (!/^\d{3}$/.test(cvv)) {
+        alert('Зачем вы пытаетесь нас обмануть? Код CVV должен состоять из 3 цифр.');
+        return;
+      }
 
-    // Проверка кода CVV
-    if (!/^\d{3}$/.test(cvv)) {
-      alert('Зачем вы пытаетесь нас обмануть? Код CVV должен состоять из 3 цифр.');
-      return;
-    }
+      // Если пользователь ввел все реквизиты корректно, перенаправить на страницу "Мои книги"
+      mybooks = mybooks.concat(buybook); // добавить книги из корзины в массив mybooks
+      localStorage.setItem('mybooks', JSON.stringify(mybooks)); // сохранить массив mybooks в локальном хранилище
+      alert('Оплата прошла успешно, ожидайте...'); // отобразить сообщение об успешной оплате
+      console.log(mybooks)
 
-    // Если пользователь ввел все реквизиты корректно, перенаправить на страницу "Мои книги"
-    mybooks = mybooks.concat(buybook); // добавить книги из корзины в массив mybooks
-    localStorage.setItem('mybooks', JSON.stringify(mybooks)); // сохранить массив mybooks в локальном хранилище
-    alert('Оплата прошла успешно, ожидайте...'); // отобразить сообщение об успешной оплате
-    console.log(mybooks)
+      // Удалить все элементы li из корзины
+      while (basketList.firstChild) {
+        basketList.removeChild(basketList.firstChild);
+      }
 
-    // Удалить все элементы li из корзины
-    while (basketList.firstChild) {
-      basketList.removeChild(basketList.firstChild);
-    }
+      // Очистить массив buybook
+      buybook = [];
+      localStorage.setItem('buybook', JSON.stringify(buybook));
 
-    // Очистить массив buybook
-    buybook = [];
-    localStorage.setItem('buybook', JSON.stringify(buybook));
-
-    setTimeout(() => {
-      window.location.href = './my_books/index.html'; // перенаправить на страницу "Мои книги" через 2 секунды
-    }, 2000);
-  };
-})
+      setTimeout(() => {
+        window.location.href = './my_books/index.html'; // перенаправить на страницу "Мои книги" через 2 секунды
+      }, 2000);
+    };
+  })
 })
